@@ -284,7 +284,7 @@ header{text-align:center}.logo{font-size:52px;animation:f 2s infinite}h1{margin:
 </script>
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";import{getAuth,signInAnonymously,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";import{getDatabase,ref,set,get,update,onValue,onDisconnect,remove}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-database.js";
-const C={apiKey:"AIzaSyC2AJTOWs3Ooye_BNsBYMJ0NObAZm17d10",authDomain:"ninja-reaction.firebaseapp.com",databaseURL:"https://ninja-reaction-default-rtdb.firebaseio.com",projectId:"ninja-reaction",storageBucket:"ninja-reaction.firebasestorage.app",messagingSenderId:"613575954059",appId:"1:613575954059:web:87b4d7619fea250af38e8e"},app=initializeApp(C),auth=getAuth(app),db=getDatabase(app),q=id=>document.getElementById(id);
+const C={apiKey:"AIzaSyB-TWq0vOPDqOvMQxnyBF5PuWJnRWJYX34",authDomain:"ninja-reaction.firebaseapp.com",databaseURL:"https://ninja-reaction-default-rtdb.firebaseio.com",projectId:"ninja-reaction",storageBucket:"ninja-reaction.firebasestorage.app",messagingSenderId:"613575954059",appId:"1:613575954059:web:87b4d7619fea250af38e8e"},app=initializeApp(C),auth=getAuth(app),db=getDatabase(app),q=id=>document.getElementById(id);
 q("connection").textContent="🟡 Connecting to Firebase…";
 let room="",me=-1,myName="",myPhoto="",off=null,last=null,armed=false,start=0,lock=false,cv=0,sound=true,ac=null,mt=null,mi=0,trapTimer=null,goTimer=null,combo=0,offline=false,offRound=0,offMode="classic",offScore=0,botScore=0,offPlayerLives=3,botLives=3,offCombo=0,offTarget="go",offTimer=null,offStart=0;
 const lobby=q("lobby"),game=q("game");
