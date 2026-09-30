@@ -27,7 +27,7 @@ header{text-align:center}.logo{font-size:52px;animation:f 2s infinite}h1{margin:
 .readyPanel{margin:8px 0;padding:10px;border:1px solid #3b3b46;border-radius:14px;background:#0b0b10;text-align:center}.readyPanel button{margin-top:7px;width:100%}
 #intro{position:fixed;inset:0;z-index:100;background:radial-gradient(circle at 50% 45%,#32140c,#050509 68%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;animation:introOut .9s ease 2.3s forwards;pointer-events:none}.introLogo{font-size:92px;animation:introNinja 1.2s ease-out}.introTitle{font-size:32px;font-weight:1000;letter-spacing:4px;color:#fff;text-shadow:0 0 22px #ff6428}.introSub{margin-top:8px;color:#aaa;font-size:11px;letter-spacing:3px}.introLine{width:150px;height:2px;margin-top:18px;background:#ff6428;box-shadow:0 0 18px #ff6428;animation:introLine 1.4s ease}@keyframes introNinja{0%{opacity:0;transform:scale(.35) translateY(25px)}70%{opacity:1;transform:scale(1.08)}100%{transform:scale(1)}}@keyframes introLine{from{width:0;opacity:0}to{width:150px;opacity:1}}@keyframes introOut{to{opacity:0;visibility:hidden}}
 .player.p1{border-color:#287bff!important;box-shadow:0 0 16px #287bff33}.player.p2{border-color:#ff3f81!important;box-shadow:0 0 16px #ff3f8133}.player.p1.active{border-color:#287bff!important;box-shadow:0 0 34px #287bff99,inset 0 0 24px #287bff22!important}.player.p2.active{border-color:#ff3f81!important;box-shadow:0 0 34px #ff3f8199,inset 0 0 24px #ff3f8122!important}.tap.turnP1{background:linear-gradient(#3f8cff,#1257d6)!important;box-shadow:0 8px 30px #287bff66!important}.tap.turnP2{background:linear-gradient(#ff5b96,#d91f64)!important;box-shadow:0 8px 30px #ff3f8166!important}
-.leaderRow{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid #24242d}.leaderRank{font-weight:1000;min-width:28px}.leaderName{flex:1}.leaderScore{font-weight:1000}
+.hostBadge{display:inline-block;margin-left:6px;padding:3px 7px;border-radius:999px;background:#2b1b08;border:1px solid #ffb24d;color:#ffd27a;font-size:10px;font-weight:1000;vertical-align:middle}.playerBadge{display:inline-block;margin-left:6px;padding:3px 7px;border-radius:999px;background:#10151f;border:1px solid #596b88;color:#a9c7ff;font-size:10px;font-weight:1000;vertical-align:middle}.leaderRow{display:flex;justify-content:space-between;gap:10px;padding:9px 2px;border-bottom:1px solid #24242d}.leaderRank{font-weight:1000;min-width:28px}.leaderName{flex:1}.leaderScore{font-weight:1000}
 </style></head><body><div id="intro"><div class="introLogo">🥷</div><div class="introTitle">NINJA REACTION</div><div class="introSub">SHADOW TRAINING • REACT FAST</div><div class="introLine"></div></div><div id="flash"></div><main class="app">
 <header><div class="logo">🥷</div><h1>NINJA REACTION</h1><div class="tag">ONLINE 1v1 • REACT OR GET HIT</div><div id="connection" class="small">🟢 Offline ready • Online mode requires the GitHub/HTTPS link</div><div class="soundBar"><button id="sound" class="sound">🔊 SOUND ON</button><button id="volDown" class="secondary volumeBtn">−</button><span id="volValue" class="volumeValue">70%</span><button id="volUp" class="secondary volumeBtn">+</button></div></header>
 <section id="lobby" class="panel"><h2>⚔️ Create or Join Room</h2>
@@ -120,7 +120,135 @@ header{text-align:center}.logo{font-size:52px;animation:f 2s infinite}h1{margin:
 })();
 </script>
 
+<!-- OFFLINE_STANDALONE -->
+<script>
+(function(){
+  "use strict";
+  let active=false, round=0, mode="classic", score=0, bot=0, lives=3, botLives=3, combo=0;
+  let target="go", timer=null, started=0;
 
+  const $=id=>document.getElementById(id);
+  const rounds=()=>mode==="speed"?15:mode==="sudden"?99:12;
+  const maxLives=()=>mode==="sudden"?1:3;
+  const hearts=n=>"❤️".repeat(Math.max(0,n))+"🖤".repeat(Math.max(0,3-n));
+
+  function ui(){
+    if(!$("offScore"))return;
+    $("offAvatar").textContent=$("char")?.value||"🥷";
+    $("offName").textContent=($("name")?.value.trim()||"Ninja").slice(0,12);
+    $("offScore").textContent=score;
+    $("botScore").textContent=bot;
+    $("offLives").textContent=hearts(lives);
+    $("botLives").textContent=hearts(botLives);
+    $("offHud").textContent=`ROUND ${Math.min(round,rounds())} / ${rounds()} • COMBO x${combo}`;
+    $("offlineModeText").textContent=mode==="speed"?"⚡ Speed Mode":mode==="sudden"?"💀 Sudden Death":"🥷 Classic Mode";
+  }
+
+  function clearTimer(){if(timer){clearTimeout(timer);timer=null}}
+
+  function finish(){
+    clearTimer(); $("offTap").disabled=true; $("offResult").classList.remove("hidden"); $("offAgain").classList.remove("hidden");
+    const text=lives<=0&&botLives<=0?"🤝 DRAW!":lives<=0?"🤖 SHADOW BOT WINS!":botLives<=0?"🏆 YOU WIN!":score===bot?"🤝 DRAW!":score>bot?"🏆 YOU WIN!":"🤖 SHADOW BOT WINS!";
+    $("offResult").textContent=text;
+    if(navigator.vibrate)navigator.vibrate([80,60,120]);
+  }
+
+  function botTurn(){
+    const chance=mode==="speed"?.80:mode==="sudden"?.72:.70;
+    if(Math.random()<chance){
+      const rt=Math.floor(170+Math.random()*430);
+      bot += rt<300?4:rt<500?3:2;
+    }else botLives=Math.max(0,botLives-1);
+  }
+
+  function next(){
+    if(!active)return;
+    if(round>=rounds()||lives<=0||botLives<=0){finish();return}
+    round++; botTurn(); ui();
+    $("offTurn").textContent="🥷 YOUR TURN";
+    $("offStatus").textContent="Get ready...";
+    $("offCount").textContent="3";
+    $("offSymbol").textContent="👀";
+    $("offMessage").textContent="GET READY";
+    $("offSub").textContent="Don't tap yet!";
+    $("offArena").className="arena";
+    $("offTap").disabled=true;
+
+    let n=3;
+    const count=()=>{
+      if(!active)return;
+      if(n>1){n--; $("offCount").textContent=n; timer=setTimeout(count,350)}
+      else timer=setTimeout(signal, mode==="speed"?700:1200);
+    };
+    timer=setTimeout(count,350);
+  }
+
+  function signal(){
+    if(!active)return;
+    target=Math.random()<.22?"trap":"go";
+    $("offCount").textContent="⚡";
+    $("offSymbol").textContent=target==="trap"?"💀":"⚡";
+    $("offMessage").textContent=target==="trap"?"TRAP! DON'T TAP!":"TAP NOW!";
+    $("offSub").textContent=target==="trap"?"Wait — auto continue":"React as fast as you can!";
+    $("offArena").className="arena "+target;
+    $("offTap").disabled=false;
+    started=performance.now();
+
+    if(target==="trap"){
+      timer=setTimeout(()=>{
+        if(!active)return;
+        combo=0;$("offStatus").textContent="🛡️ You avoided the trap!";
+        $("offTap").disabled=true;ui();timer=setTimeout(next,650);
+      },1200);
+    }else{
+      timer=setTimeout(()=>{
+        if(!active)return;
+        lives=Math.max(0,lives-1);combo=0;$("offStatus").textContent="⏱️ Too slow! -1 life";
+        $("offTap").disabled=true;ui();timer=setTimeout(next,650);
+      },2500);
+    }
+  }
+
+  function tap(){
+    if(!active||$("offTap").disabled)return;
+    clearTimer(); $("offTap").disabled=true;
+    const rt=Math.round(performance.now()-started);
+    if(target==="trap"){
+      lives=Math.max(0,lives-1);combo=0;
+      $("offStatus").textContent="💀 You hit the trap! -1 life";
+    }else{
+      combo++;
+      const base=rt<180?5:rt<300?4:rt<500?3:2;
+      const mult=combo>=5?2:combo>=3?1.5:1;
+      const pts=Math.round(base*mult);
+      score+=pts;
+      $("offStatus").textContent=`⚡ ${rt} ms • +${pts}`;
+    }
+    if(navigator.vibrate)navigator.vibrate(target==="trap"?[100,70,100]:20);
+    ui();timer=setTimeout(next,650);
+  }
+
+  function start(){
+    active=true;round=0;score=0;bot=0;lives=maxLives();botLives=maxLives();combo=0;
+    mode=$("mode")?.value||"classic";
+    $("lobby").classList.add("hidden");$("game").classList.add("hidden");$("offlineGame").classList.remove("hidden");
+    $("offResult").classList.add("hidden");$("offAgain").classList.add("hidden");
+    ui();next();
+  }
+  function exit(){
+    active=false;clearTimer();
+    $("offlineGame").classList.add("hidden");$("lobby").classList.remove("hidden");
+  }
+
+  $("offlineBtn").addEventListener("click",start);
+  $("offTap").addEventListener("click",tap);
+  $("offExit").addEventListener("click",exit);
+  $("offAgain").addEventListener("click",start);
+
+  // Make the local/offline mode available immediately, even if Firebase module loading fails.
+  $("connection").textContent="🟢 Offline mode ready • Online mode loads separately";
+})();
+</script>
 
 <script>
 (function(){
@@ -325,12 +453,20 @@ function render(s){turnVibrate(s);
    av.innerHTML=photo?`<img src="${photo}" alt="profile">`:(s.players?.[i]?.character||"🥷");
  }
 
-for(let i=0;i<2;i++){q("p"+i).classList.toggle("active",s.current===i&&s.status==="playing");q("p"+i).querySelector(".pname").textContent=(s.players?.[i]?.character||"🥷")+" "+pn(i,s)+(s.players?.[i]?.connected?"":" • offline");q("s"+i).textContent=s.players?.[i]?.score||0;q("l"+i).textContent=lives(s.players?.[i]?.lives||0)}
+for(let i=0;i<2;i++){
+  q("p"+i).classList.toggle("active",s.current===i&&s.status==="playing");
+  const nameEl=q("p"+i).querySelector(".pname");
+  const online=s.players?.[i]?.connected;
+  const badge=i===0?'<span class="hostBadge">👑 HOST</span>':'<span class="playerBadge">PLAYER</span>';
+  nameEl.innerHTML=(s.players?.[i]?.character||"🥷")+" "+pn(i,s)+(online?"":" • offline")+" "+badge;
+  q("s"+i).textContent=s.players?.[i]?.score||0;
+  q("l"+i).textContent=lives(s.players?.[i]?.lives||0);
+}
 q("tap").classList.toggle("turnP1",s.status==="signal"&&s.current===0);
 q("tap").classList.toggle("turnP2",s.status==="signal"&&s.current===1);if(!s.players?.[1]?.connected){q("turn").textContent="🥷 WAITING FOR PLAYER 2";gs("Send the room code to your friend.");q("count").textContent="👀";q("symbol").textContent="🥷";q("message").textContent="WAITING";q("sub").textContent="Room: "+room;q("tap").disabled=true;return}
 if(s.status==="lobby"||s.status==="finished"){
  const r0=!!s.ready?.[0],r1=!!s.ready?.[1];
- if(s.status==="finished"&&q("resultPanel").classList.contains("hidden"))finish(s);
+ if(s.status==="finished"&&q("resultPanel").classList.contains("hidden"))finish(s);if(s.status==="finished")q("again").classList.remove("hidden");
  q("readyPanel").classList.remove("hidden");
  q("readyStatus").textContent=`${r0?"🟢":"⚪"} ${pn(0,s)} ${r0?"READY":"NOT READY"} • ${r1?"🟢":"⚪"} ${pn(1,s)} ${r1?"READY":"NOT READY"}`;
  q("readyBtn").textContent=s.ready?.[me]?"❌ CANCEL READY":"✅ READY";
@@ -385,7 +521,7 @@ function signal(s){
 async function tap(){if(!last||me!==last.current||last.status!=="signal"||!armed)return;if(trapTimer){clearTimeout(trapTimer);trapTimer=null;}armed=false;q("tap").disabled=true;let rt=Math.round(performance.now()-start),trap=last.target==="trap",p=last.players[me],score=p.score||0,lv=p.lives||0,text;if(navigator.vibrate)navigator.vibrate(trap?[80,50,100]:25);if(trap){lv=Math.max(0,lv-1);combo=0;text=`💀 ${pn(me,last)} hit the trap! -1 life`;sfx("hit");fx(true)}else{combo++;let mult=combo>=5?2:combo>=3?1.5:1;let base=rt<180?5:rt<300?4:rt<500?3:2;let pts=Math.round(base*mult);score+=pts;text=`⚡ ${pn(me,last)} reacted in ${rt} ms (+${pts})`;if(rt<180){text="🔥 PERFECT! "+text;sfx("perfect")}else sfx("go");fx();attackFx();comboFx(combo)}await update(ref(db,`rooms/${room}`),{[`players/${me}/score`]:score,[`players/${me}/lives`]:lv,status:"roundResult",resultText:text,reactionMs:rt});log(text);setTimeout(next,900)}
 async function next(){let s=(await get(ref(db,"rooms/"+room))).val();if(!s||s.status!=="roundResult")return;if(s.players[0].lives<=0||s.players[1].lives<=0||s.round>=modeRounds(s.mode))return update(ref(db,"rooms/"+room),{status:"finished",result:s.players[0].score===s.players[1].score?"draw":s.players[0].score>s.players[1].score?0:1});await update(ref(db,`rooms/${room}`),{status:"countdown",round:s.round+1,current:s.round%2,count:3,target:"idle"});setTimeout(async()=>{let z=(await get(ref(db,"rooms/"+room))).val();if(z?.status==="countdown")update(ref(db,`rooms/${room}`),{status:"signal",target:Math.random()<modeTrap(s.mode||mode)?"trap":"go"})},modeDelay(s.mode))}
 async function begin(){q("resultPanel").classList.add("hidden");q("again").classList.add("hidden");let s=(await get(ref(db,"rooms/"+room))).val();if(!s||((s.status!=="lobby")&&(s.status!=="finished"))||!s.ready?.[0]||!s.ready?.[1])return;await update(ref(db,`rooms/${room}`),{status:"countdown",round:1,current:0,count:3,target:"idle",ready:[false,false]});setTimeout(async()=>{let z=(await get(ref(db,"rooms/"+room))).val();if(z?.status==="countdown"&&z.round===1)update(ref(db,`rooms/${room}`),{status:"signal",target:Math.random()<modeTrap(s.mode||mode)?"trap":"go"})},modeDelay(s.mode))}
-function finish(s){let t=s.result==="draw"?"🤝 DRAW!":(s.result===me?"🏆 YOU WIN!":"❌ YOU LOSE!");q("turn").textContent="🏆 GAME OVER";q("count").textContent="🏆";q("symbol").textContent="🥷";q("message").textContent=t;q("sub").textContent=`${s.players[0].score} — ${s.players[1].score}`;q("winner").textContent=t;q("resultPanel").classList.remove("hidden");q("again").classList.add("hidden");if(window.ninjaProfileV9){const r=s.result==="draw"?"draw":s.result===me?"win":"loss";const opp=pn(me===0?1:0,s);window.ninjaProfileV9.addResult(r,s.mode||"classic",s.players?.[me]?.score||0,opp,s.reactionMs||null)}sfx("win");fx();stopMusic()}
+function finish(s){let t=s.result==="draw"?"🤝 DRAW!":(s.result===me?"🏆 YOU WIN!":"❌ YOU LOSE!");q("turn").textContent="🏆 GAME OVER";q("count").textContent="🏆";q("symbol").textContent="🥷";q("message").textContent=t;q("sub").textContent=`${s.players[0].score} — ${s.players[1].score}`;q("winner").textContent=t;q("resultPanel").classList.remove("hidden");q("again").classList.remove("hidden");q("again").textContent="⚔️ PLAY AGAIN";if(window.ninjaProfileV9){const r=s.result==="draw"?"draw":s.result===me?"win":"loss";const opp=pn(me===0?1:0,s);window.ninjaProfileV9.addResult(r,s.mode||"classic",s.players?.[me]?.score||0,opp,s.reactionMs||null)}sfx("win");fx();stopMusic()}
 
 async function setReady(){try{if(!room||me<0||!last||(last.status!=="lobby"&&last.status!=="finished"))return;await update(ref(db,`rooms/${room}/ready`),{[me]:!last.ready?.[me]})}catch(e){gs("Could not update Ready status.")}}
 async function changeMode(){
@@ -397,11 +533,17 @@ async function changeMode(){
  }catch(e){gs("Could not change mode.");console.error(e)}
 }
 async function again(){
- if(me!==0)return;combo=0;lock=false;const cur=(await get(ref(db,`rooms/${room}`))).val(),mode=cur?.mode||"classic",lv=modeLives(mode);
- await update(ref(db,`rooms/${room}`),{status:"countdown",round:1,current:0,count:3,target:"idle",result:"",
-  "players/0/score":0,"players/0/lives":lv,"players/1/score":0,"players/1/lives":lv});
- q("resultPanel").classList.add("hidden");music();
- setTimeout(async()=>{const s=(await get(ref(db,`rooms/${room}`))).val();if(s?.status==="countdown")update(ref(db,`rooms/${room}`),{status:"signal",target:Math.random()<modeTrap(s.mode||mode)?"trap":"go"})},modeDelay(mode))
+ if(!room||me<0||!last||(last.status!=="finished"&&last.status!=="lobby"))return;
+ try{
+  combo=0;lock=false;
+  await update(ref(db,`rooms/${room}/ready`),{[me]:true});
+  q("resultPanel").classList.add("hidden");
+  q("again").classList.add("hidden");
+  gs("You are READY. Waiting for the other player...");
+ }catch(e){
+  gs("Could not start the next match.");
+  console.error(e);
+ }
 }
 async function leave(){try{await remove(ref(db,`rooms/${room}/players/${me}`))}catch{}leaveLocal()}function leaveLocal(){lastTurnVibration="";combo=0;myPhoto="";if(trapTimer)clearTimeout(trapTimer);if(goTimer)clearTimeout(goTimer);if(off)off();off=null;stopMusic();cv++;room="";me=-1;game.classList.add("hidden");lobby.classList.remove("hidden");q("resultPanel").classList.add("hidden");stat("Left room.")}
 window.ninjaChangeMode=changeMode;
